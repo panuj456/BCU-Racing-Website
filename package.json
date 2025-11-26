@@ -1,10 +1,10 @@
-{
-  "name": "static-frontend",
+  "name": "static-site",
   "version": "1.0.0",
-  "description": "A simple static frontend with HTML, CSS, and JavaScript",
+  "description": "A simple static HTML/CSS/JS project.",
   "main": "index.html",
   "scripts": {
-    "start": "echo 'No start script for static site'"
+    "start": "echo 'No start script for static site'",  // No server to start for static sites
+    "deploy": "echo 'Deploying to Vercel...'"  // Placeholder for deploy step if you need it
   },
   "dependencies": {},
   "devDependencies": {},
