@@ -8,11 +8,11 @@ on:
 
 jobs:
 
-  # -------------------- #
-  #   BACKEND BUILD      #
-  # -------------------- #
+  # ------------------------------ #
+  #          BACKEND JOB           #
+  # ------------------------------ #
   backend:
-    name: Backend - FastAPI (Heroku)
+    name: Backend - Deploy to Heroku
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -34,7 +34,7 @@ jobs:
 
       - name: Run tests
         run: |
-          if [ -d "tests" ]; then pytest -q; else echo "No tests"; fi
+          if [ -d "tests" ]; then pytest -q; else echo "No tests folder"; fi
 
       - name: Deploy to Heroku
         uses: akhileshns/heroku-deploy@v4.1.6
@@ -50,11 +50,11 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
 
-  # -------------------- #
-  #   FRONTEND BUILD     #
-  # -------------------- #
+  # ------------------------------ #
+  #          FRONTEND JOB          #
+  # ------------------------------ #
   frontend:
-    name: Frontend - Static (Vercel)
+    name: Frontend - Deploy to Vercel
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -64,12 +64,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
       - name: Install Vercel CLI
         run: npm install -g vercel
 
       - name: Deploy to Vercel
-        run: vercel --prod --yes
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VER
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          API_URL: ${{ secrets.API_URL }}
+        run: |
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
