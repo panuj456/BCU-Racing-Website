@@ -41,7 +41,7 @@ jobs:
         working-directory: ./backend
         run: |
           source venv/bin/activate
-          pytest tests/  # Replace with your test command
+          pytest tests/  # Run your test command (make sure pytest is in requirements.txt)
 
       - name: Deploy FastAPI Backend to Heroku
         if: success()  # Only deploy if tests pass
@@ -61,19 +61,19 @@ jobs:
       - name: Install dependencies (Frontend)
         working-directory: ./frontend
         run: |
-          npm install  # If you have any build dependencies
+          npm install  # Install frontend dependencies if needed (even for static sites)
 
       - name: Build Frontend (Optional)
         working-directory: ./frontend
         run: |
-          echo "No build needed for plain HTML/CSS/JS"  # For simple static sites
+          echo "No build needed for plain HTML/CSS/JS"  # For simple static sites, you can skip the build
 
       - name: Deploy to Vercel
         if: success()  # Only deploy if all previous steps succeed
         run: |
-          curl -s https://vercel.com/download | bash
-          vercel login ${{ secrets.VERCEL_TOKEN }}
-          vercel --prod --confirm  # Deploy to Vercel (make sure VERCEL_TOKEN is set in secrets)
+          curl -s https://vercel.com/download | bash  # Install Vercel CLI
+          vercel login ${{ secrets.VERCEL_TOKEN }}  # Login to Vercel with the secret token
+          vercel --prod --confirm  # Deploy to Vercel (ensure VERCEL_TOKEN is set in secrets)
 
   # Optional: DB migrations (MariaDB setup)
   db:
@@ -85,10 +85,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install MariaDB Client
-        run: sudo apt-get install mariadb-client
+        run: sudo apt-get install mariadb-client  # Install MariaDB client if needed for migrations
 
       - name: Run DB Migrations (if any)
         working-directory: ./backend
         run: |
           source venv/bin/activate
-          alembic upgrade head  # Assuming you're using Alembic for migrations
+          alembic upgrade head  # Run migrations using Alembic (or any other migration tool you're using)
