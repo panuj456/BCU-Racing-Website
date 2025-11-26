@@ -1,0 +1,13 @@
+{
+  "name": "static-frontend",
+  "version": "1.0.0",
+  "description": "A simple static frontend with HTML, CSS, and JavaScript",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'No start script for static site'"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "author": "Your Name",
+  "license": "MIT"
+}
