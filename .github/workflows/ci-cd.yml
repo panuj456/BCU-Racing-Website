@@ -1,94 +1,75 @@
-name: CI/CD Pipeline for Full Stack (FastAPI + Static Frontend)
+name: CI-CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
   pull_request:
-    branches:
-      - main
+    branches: ["main"]
 
 jobs:
-  # Backend job: FastAPI, Uvicorn, Pandas, MariaDB
+
+  # -------------------- #
+  #   BACKEND BUILD      #
+  # -------------------- #
   backend:
+    name: Backend - FastAPI (Heroku)
     runs-on: ubuntu-latest
-    needs: frontend  # Optional: Only if you want to ensure frontend deploy happens before backend
+    defaults:
+      run:
+        working-directory: backend
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.11"
 
-      - name: Install dependencies (Backend)
-        working-directory: ./backend
+      - name: Install dependencies
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip  # Upgrade pip to avoid any issues
-          pip install -r requirements.txt  # Install backend dependencies
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Install FastAPI and Uvicorn
-        working-directory: ./backend
+      - name: Run tests
         run: |
-          source venv/bin/activate
-          pip install fastapi uvicorn  # Install FastAPI and Uvicorn explicitly
+          if [ -d "tests" ]; then pytest -q; else echo "No tests"; fi
 
-      - name: Run backend tests
-        working-directory: ./backend
-        run: |
-          source venv/bin/activate
-          pytest tests/  # Run your test command (make sure pytest is in requirements.txt)
+      - name: Deploy to Heroku
+        uses: akhileshns/heroku-deploy@v4.1.6
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          usedocker: false
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
 
-      - name: Deploy FastAPI Backend to Heroku
-        if: success()  # Only deploy if tests pass
-        working-directory: ./backend
-        run: |
-          git remote add heroku https://git.heroku.com/${{ secrets.HEROKU_APP_NAME }}.git
-          git push heroku main  # Deploy to Heroku
-
-  # Frontend job: Static files (HTML/CSS/JS)
+  # -------------------- #
+  #   FRONTEND BUILD     #
+  # -------------------- #
   frontend:
+    name: Frontend - Static (Vercel)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Install dependencies (Frontend)
-        working-directory: ./frontend
-        run: |
-          npm install  # Install frontend dependencies if needed (even for static sites)
-
-      - name: Build Frontend (Optional)
-        working-directory: ./frontend
-        run: |
-          echo "No build needed for plain HTML/CSS/JS"  # For simple static sites, you can skip the build
+      - name: Install Vercel CLI
+        run: npm install -g vercel
 
       - name: Deploy to Vercel
-        if: success()  # Only deploy if all previous steps succeed
-        run: |
-          curl -s https://vercel.com/download | bash  # Install Vercel CLI
-          vercel login ${{ secrets.VERCEL_TOKEN }}  # Login to Vercel with the secret token
-          vercel --prod --confirm  # Deploy to Vercel (ensure VERCEL_TOKEN is set in secrets)
-
-  # Optional: DB migrations (MariaDB setup)
-  db:
-    runs-on: ubuntu-latest
-    needs: backend  # Ensure backend setup happens first
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Install MariaDB Client
-        run: sudo apt-get install mariadb-client  # Install MariaDB client if needed for migrations
-
-      - name: Run DB Migrations (if any)
-        working-directory: ./backend
-        run: |
-          source venv/bin/activate
-          alembic upgrade head  # Run migrations using Alembic (or any other migration tool you're using)
+        run: vercel --prod --yes
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VER
