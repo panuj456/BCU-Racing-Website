@@ -1,34 +1,94 @@
-name: CI/CD Pipeline for Static Site
+name: CI/CD Pipeline for Full Stack (FastAPI + Static Frontend)
 
 on:
   push:
     branches:
-      - main  # Trigger on push to main branch
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest  # Run on the latest Ubuntu runner
+  # Backend job: FastAPI, Uvicorn, Pandas, MariaDB
+  backend:
+    runs-on: ubuntu-latest
+    needs: frontend  # Optional: Only if you want to ensure frontend deploy happens before backend
 
     steps:
-      # Step 1: Checkout code
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v2
 
-      # Step 2: Install dependencies (if needed for build tools like Webpack or Gulp)
-      - name: Install dependencies
-        run: |
-          npm install  # If you're using any tools for preprocessing
-
-      # Step 3: Build project (skip if just plain HTML)
-      - name: Build project
-        run: |
-          echo "No build step needed for static site"
-
-      # Step 4: Deploy to Vercel
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v20
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}  # Vercel token for deployment
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}  # Project ID
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}  # Organization ID
-          vercel-args: '--prod'  # Deploy to production
+          python-version: '3.10'
+
+      - name: Install dependencies (Backend)
+        working-directory: ./backend
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip  # Upgrade pip to avoid any issues
+          pip install -r requirements.txt  # Install backend dependencies
+
+      - name: Install FastAPI and Uvicorn
+        working-directory: ./backend
+        run: |
+          source venv/bin/activate
+          pip install fastapi uvicorn  # Install FastAPI and Uvicorn explicitly
+
+      - name: Run backend tests
+        working-directory: ./backend
+        run: |
+          source venv/bin/activate
+          pytest tests/  # Replace with your test command
+
+      - name: Deploy FastAPI Backend to Heroku
+        if: success()  # Only deploy if tests pass
+        working-directory: ./backend
+        run: |
+          git remote add heroku https://git.heroku.com/${{ secrets.HEROKU_APP_NAME }}.git
+          git push heroku main  # Deploy to Heroku
+
+  # Frontend job: Static files (HTML/CSS/JS)
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies (Frontend)
+        working-directory: ./frontend
+        run: |
+          npm install  # If you have any build dependencies
+
+      - name: Build Frontend (Optional)
+        working-directory: ./frontend
+        run: |
+          echo "No build needed for plain HTML/CSS/JS"  # For simple static sites
+
+      - name: Deploy to Vercel
+        if: success()  # Only deploy if all previous steps succeed
+        run: |
+          curl -s https://vercel.com/download | bash
+          vercel login ${{ secrets.VERCEL_TOKEN }}
+          vercel --prod --confirm  # Deploy to Vercel (make sure VERCEL_TOKEN is set in secrets)
+
+  # Optional: DB migrations (MariaDB setup)
+  db:
+    runs-on: ubuntu-latest
+    needs: backend  # Ensure backend setup happens first
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install MariaDB Client
+        run: sudo apt-get install mariadb-client
+
+      - name: Run DB Migrations (if any)
+        working-directory: ./backend
+        run: |
+          source venv/bin/activate
+          alembic upgrade head  # Assuming you're using Alembic for migrations
