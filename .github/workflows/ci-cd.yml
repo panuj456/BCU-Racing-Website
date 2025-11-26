@@ -8,11 +8,11 @@ on:
 
 jobs:
 
-  # ------------------------------ #
-  #          BACKEND JOB           #
-  # ------------------------------ #
+  # ============================================================
+  #                         BACKEND JOB
+  # ============================================================
   backend:
-    name: Backend - Deploy to Heroku
+    name: Backend — Deploy to Heroku
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,7 +32,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Run Tests (if available)
         run: |
           if [ -d "tests" ]; then pytest -q; else echo "No tests folder"; fi
 
@@ -50,11 +50,11 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
 
-  # ------------------------------ #
-  #          FRONTEND JOB          #
-  # ------------------------------ #
+  # ============================================================
+  #                         FRONTEND JOB
+  # ============================================================
   frontend:
-    name: Frontend - Deploy to Vercel
+    name: Frontend — Deploy to Vercel
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -64,10 +64,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Node
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
+
+      - name: Install dependencies (if package.json exists)
+        run: |
+          if [ -f "package.json" ]; then npm install; else echo "No package.json found"; fi
 
       - name: Install Vercel CLI
         run: npm install -g vercel
