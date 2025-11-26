@@ -12,7 +12,7 @@ jobs:
   #                         BACKEND JOB
   # ============================================================
   backend:
-    name: Backend — Deploy to Heroku
+    name: Backend — Deploy FastAPI to Heroku
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,14 +27,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install FastAPI + MariaDB dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run Tests (if available)
-        run: |
-          if [ -d "tests" ]; then pytest -q; else echo "No tests folder"; fi
+          pip install fastapi uvicorn sqlalchemy pymysql python-dotenv pydantic
 
       - name: Deploy to Heroku
         uses: akhileshns/heroku-deploy@v4.1.6
@@ -68,10 +64,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
-
-      - name: Install dependencies (if package.json exists)
-        run: |
-          if [ -f "package.json" ]; then npm install; else echo "No package.json found"; fi
 
       - name: Install Vercel CLI
         run: npm install -g vercel
